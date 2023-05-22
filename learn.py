@@ -17,10 +17,6 @@ def getTable(csvFile):
     return dash_table.DataTable(data=csvFile.to_dict('records'), page_size=6, style_table={'overflowX': 'auto'})
 
 
-csvFiles = [degreePayBack, salariesByCollegeType, salariesByRegion]
-tables = [[getTable(degreePayBack)], [getTable(salariesByCollegeType)], [
-    getTable(salariesByRegion)]]
-
 # Clean up the columns with "$" symbol
 columnsToClean = ['Starting Median Salary',
                   'Mid-Career Median Salary',
@@ -32,13 +28,21 @@ columnsToClean = ['Starting Median Salary',
 
 # Clean up the columns with "$" symbol
 for col in columnsToClean:
-    degreePayBack[col] = degreePayBack[col].replace(
-        {'\$': '', ',': '', "N/A": ''}, regex=True).astype(float)
-    salariesByCollegeType[col] = degreePayBack[col].replace(
-        {'\$': '', ',': '', "N/A": ''}, regex=True).astype(float)
-    salariesByRegion[col] = degreePayBack[col].replace(
-        {'\$': '', ',': '', "N/A": ''}, regex=True).astype(float)
+    degreePayBack[col] = degreePayBack[col].str.replace(
+        '$', '')
+    degreePayBack[col] = degreePayBack[col].str.replace(',', '').astype(float)
+    salariesByCollegeType[col] = salariesByCollegeType[col].str.replace(
+        '$', '')
+    salariesByCollegeType[col] = salariesByCollegeType[col].str.replace(
+        ',', '').astype(float)
+    salariesByRegion[col] = salariesByRegion[col].str.replace(
+        '$', '')
+    salariesByRegion[col] = salariesByRegion[col].str.replace(
+        ',', '').astype(float)
 
+csvFiles = [degreePayBack, salariesByCollegeType, salariesByRegion]
+tables = [[getTable(degreePayBack)], [getTable(salariesByCollegeType)], [
+    getTable(salariesByRegion)]]
 
 # Initialize the app - incorporate a Dash Bootstrap theme
 external_stylesheets = [dbc.themes.CERULEAN]
@@ -72,7 +76,6 @@ app.layout = dbc.Container([
     dbc.Row([
         dbc.RadioItems(options=[{"label": x, "value": x}
                                 for x in ['Starting Median Salary', 'Mid-Career Median Salary',
-                                          'Percent change from Starting to Mid-Career Salary',
                                           'Mid-Career 10th Percentile Salary',
                                           'Mid-Career 25th Percentile Salary',
                                           'Mid-Career 75th Percentile Salary',
@@ -95,11 +98,18 @@ app.layout = dbc.Container([
 @callback(
     Output(component_id='graph',
            component_property='figure'),
-    Input(component_id='radio-buttons-final', component_property='value')
+    Input(component_id='radio-buttons-final', component_property='value'),
+    Input(component_id='dropdown-csv-files', component_property='value')
 )
-def update_degrees_graph(col_chosen):
-    fig = px.histogram(degreePayBack, x='Undergraduate Major',
-                       y=col_chosen, histfunc='avg')
+def update_graph(col_chosen, selected_csv_file):
+    if selected_csv_file == 'degrees-that-pay-back':
+        fig = px.histogram(degreePayBack, x='Undergraduate Major',
+                           y=col_chosen, histfunc='avg')
+    elif selected_csv_file == "salaries-by-college-type":
+        fig = px.scatter(salariesByCollegeType, x='Starting Median Salary',
+                         y=col_chosen, color='School Type')
+    elif selected_csv_file == "salaries-by-region":
+        fig = px.box(salariesByRegion, color="Region", y=col_chosen)
     return fig
 
 
@@ -118,4 +128,4 @@ def choose_csv_file(selected_csv_file):
 
 # Run the app
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)
