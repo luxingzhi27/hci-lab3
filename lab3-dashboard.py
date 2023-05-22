@@ -5,7 +5,7 @@ import plotly.express as px
 import dash_bootstrap_components as dbc
 
 # Incorporate data
-degreePayBack = pd.read_csv(
+salariesByMajor = pd.read_csv(
     './dataset/college-salaries/degrees-that-pay-back.csv', encoding='MacRoman')
 salariesByCollegeType = pd.read_csv(
     './dataset/college-salaries/salaries-by-college-type.csv', encoding='MacRoman')
@@ -16,6 +16,10 @@ salariesByRegion = pd.read_csv(
 def getTable(csvFile):
     return dash_table.DataTable(data=csvFile.to_dict('records'), page_size=6, style_table={'overflowX': 'auto'})
 
+
+csvFiles = [salariesByMajor, salariesByCollegeType, salariesByRegion]
+tables = [[getTable(salariesByMajor)], [getTable(salariesByCollegeType)], [
+    getTable(salariesByRegion)]]
 
 # Clean up the columns with "$" symbol
 columnsToClean = ['Starting Median Salary',
@@ -28,9 +32,10 @@ columnsToClean = ['Starting Median Salary',
 
 # Clean up the columns with "$" symbol
 for col in columnsToClean:
-    degreePayBack[col] = degreePayBack[col].str.replace(
+    salariesByMajor[col] = salariesByMajor[col].str.replace(
         '$', '')
-    degreePayBack[col] = degreePayBack[col].str.replace(',', '').astype(float)
+    salariesByMajor[col] = salariesByMajor[col].str.replace(
+        ',', '').astype(float)
     salariesByCollegeType[col] = salariesByCollegeType[col].str.replace(
         '$', '')
     salariesByCollegeType[col] = salariesByCollegeType[col].str.replace(
@@ -40,9 +45,6 @@ for col in columnsToClean:
     salariesByRegion[col] = salariesByRegion[col].str.replace(
         ',', '').astype(float)
 
-csvFiles = [degreePayBack, salariesByCollegeType, salariesByRegion]
-tables = [[getTable(degreePayBack)], [getTable(salariesByCollegeType)], [
-    getTable(salariesByRegion)]]
 
 # Initialize the app - incorporate a Dash Bootstrap theme
 external_stylesheets = [dbc.themes.CERULEAN]
@@ -61,13 +63,13 @@ app.layout = dbc.Container([
         dcc.Dropdown(
             id="dropdown-csv-files",
             options=[
-                {"label": "degrees-that-pay-back",
-                    "value": "degrees-that-pay-back"},
+                {"label": "salaries-by-major",
+                    "value": "salaries-by-major"},
                 {"label": "salaries-by-college-type",
                     "value": "salaries-by-college-type"},
                 {"label": "salaries-by-region", "value": "salaries-by-region"}
             ],
-            value="degrees-that-pay-back",
+            value="salaries-by-major",
         ),
     ]),
     dbc.Row([html.Div([], style={'height': '20px'})]),
@@ -102,8 +104,8 @@ app.layout = dbc.Container([
     Input(component_id='dropdown-csv-files', component_property='value')
 )
 def update_graph(col_chosen, selected_csv_file):
-    if selected_csv_file == 'degrees-that-pay-back':
-        fig = px.histogram(degreePayBack, x='Undergraduate Major',
+    if selected_csv_file == 'salaries-by-major':
+        fig = px.histogram(salariesByMajor, x='Undergraduate Major',
                            y=col_chosen, histfunc='avg')
     elif selected_csv_file == "salaries-by-college-type":
         fig = px.scatter(salariesByCollegeType, x='Starting Median Salary',
@@ -118,7 +120,7 @@ def update_graph(col_chosen, selected_csv_file):
     Input(component_id='dropdown-csv-files', component_property='value'),
 )
 def choose_csv_file(selected_csv_file):
-    if selected_csv_file == 'degrees-that-pay-back':
+    if selected_csv_file == 'salaries-by-major':
         return tables[0]
     if selected_csv_file == 'salaries-by-college-type':
         return tables[1]
